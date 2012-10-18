@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Asteroid Wireframe1</title>
+       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta http-equiv="Content-Language" content="en" />
+        <meta name="description" content="Design your LEGO© models in 3D and share them with other fans." />
+        <meta name="robots" content="index, follow" />
+
+        <!--link rel="stylesheet" type="text/css" media="screen" href="css/main.css" /-->
+        <!--link rel="stylesheet" type="text/css" media="screen" href="css/workshop.css" /-->
+       	<link rel="stylesheet" type="text/css" media="screen" href="http://www.mecabricks.com/views/css/main.css" />
+        <link rel="stylesheet" type="text/css" media="screen" href="http://www.mecabricks.com/views/css/workshop.css" />
+
+</head>
+
+<body>
+
+
+	<script src="js/three.min.js"></script>
+	<!--script src="js/Three.js"></script-->
+
+	<script>
+
+		var renderer,camera,scene,miniRenderer, miniViewCamera,sphere,ambientLight,directionalLight, sunlight, c;
+		var angle = 0,probe1a,probe1b, orbitscale;
+
+		clock = new THREE.Clock();
+
+		window.onload = function(){
+
+			init();
+			animate();
+
+		};
+
+
+		function init() {
+			//Main renderer
+			c = document.getElementById("3dworld");
+			renderer = new THREE.WebGLRenderer({canvas:c});
+			renderer.setSize(c.width, c.height);
+
+			//Mini view renderer
+			//var minic = document.getElementById("mini3dworld");
+			//miniRenderer = new THREE.WebGLRenderer({canvas:minic});
+			//miniRenderer.setSize(minic.width, minic.height);
+
+			// scene
+			scene = new THREE.Scene();
+
+
+			// camera
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 50, 1e7);
+			camera.position.z = 0;
+			camera.position.x = 0;
+			camera.position.y = 10000;
+			camera.lookAt( scene.position );
+
+			// mini view camera
+			miniViewCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 50, 1e7);
+			miniViewCamera.position.z = 0;
+			miniViewCamera.position.x = 0;
+			miniViewCamera.position.y = 10000;
+			//miniViewCamera.fov = 180;
+			miniViewCamera.lookAt( scene.position );
+
+/*
+    gCamera2 = new THREE.Camera( 45, gScreen.width / gScreen.height, 1, 10000 );
+    gCamera2.position = new THREE.Vector3(-1000, 320, 0);
+    gCamera2.target.position = new THREE.Vector3(0, 0, -1000);
+
+    gMiniRenderer = new THREE.CanvasRenderer(mini3dworld);
+    gMiniRenderer.setSize(gScreen.width * .15, gScreen.height * .15);
+*/
+			//scene.add( new THREE.AmbientLight( 0x00020 ) );
+
+			// sphere - earth
+			earth = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
+				color: 0x0000ff
+			}));
+			earth.position.z = 0;
+			earth.position.x = 2000;
+			earth.position.y = 0;
+			earth.overdraw = true;
+			scene.add(earth);
+
+
+			// sphere - moon
+			moon = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
+				color: 0x000000
+			}));
+			//moon.position.z = 0;
+			//moon.position.x = earth.position.x + 500;
+			//moon.position.y = 0;
+			moon.position.set( earth.position.x + 500, 0, 0 );
+			moon.scale.set( 0.23, 0.23, 0.23 );
+			moon.overdraw = true;
+			scene.add(moon);
+
+			// sphere - sun
+			sun = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
+				color: 0xd8ff00, transparent: true
+			}));
+			sun.position.z = 0;
+			sun.position.x = 0;
+			sun.position.y = 0;
+			sun.scale.set( 5.0, 5.0, 5.0 );
+			sun.overdraw = true;
+			scene.add(sun);
+
+			// sphere - asteroid
+			asteroid = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
+				color: 0x000000
+			}));
+			asteroid.position.z = 0;
+			asteroid.position.x = 3000;
+			asteroid.position.y = 0;
+			//asteroid.scale.set( 5.0, 5.0, 5.0 );
+			asteroid.scale.set( 0.23, 0.23, 0.23 );
+			asteroid.overdraw = true;
+			scene.add(asteroid);
+
+			// sphere - space probe1
+			probe1 = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
+				color: 0x000000
+			}));
+
+			//probe1 orbit calculation (GM = 1)
+			var r = 6628140;//radius
+			var v = 4000;//launch velocity
+			var zenithangle = .7853;//1.5707;//1.5533;
+			var gmsun = 3.986005e14;
+			orbitscale = .001;
+			probe1a = 1 / ((2/r) - ((v*v)/gmsun));//semi-major axis
+			var gutse = Math.pow((r*v*v)/gmsun - 1,2) * Math.pow(Math.sin(zenithangle),2) + Math.pow(Math.cos(zenithangle),2);
+			var probe1e = Math.sqrt( gutse );//eccentricity
+			probe1b = probe1a * Math.sqrt(1 - Math.pow(probe1e,2));
+			var q = 0;//45 * .017;//angle between the X-axis and the major axis of the ellipse in radians
+			//alert(probe1b);
+			//Calculate initial position
+   			//probe1.position.x = orbitscale * (probe1a*Math.cos(0)*Math.cos(0) - probe1b*Math.sin(0)*Math.sin(0));
+    		//probe1.position.z = orbitscale * (probe1a*Math.cos(0)*Math.sin(0) + probe1b*Math.sin(0)*Math.cos(0));
+   			//probe1.position.x = earth.position.x;
+    		//probe1.position.z = earth.position.z;
+    		//alert(probe1.position.y);
+
+			//probe1.position.z = 0;
+			//probe1.position.x = 3000;
+			//probe1.position.y = 0;
+			//probe1.scale.set( 5.0, 5.0, 5.0 );
+			probe1.scale.set( 0.23, 0.23, 0.23 );
+			probe1.overdraw = true;
+			scene.add(probe1);
+
+
+			// add subtle ambient lighting
+			ambientLight = new THREE.AmbientLight(0x555555);
+			scene.add(ambientLight);
+
+			//sunlight
+			sunlight = new THREE.PointLight( 0xffffff, 100, 5000 );
+			sunlight.position.z = 0;
+			sunlight.position.x = 0;
+			sunlight.position.y = 0;
+			//sunlight.position.set( 0, 0, 0 );
+			scene.add( sunlight );
+
+			// add directional light source
+			//directionalLight = new THREE.DirectionalLight(0xffffff);
+			//directionalLight.position.set(1, 1, 1).normalize();
+			//scene.add(directionalLight);
+
+			//renderer.render(scene, camera);
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+			updateOrbits();
+			render();
+
+		};
+
+		function render() {
+			//main camera
+			renderer.clear();
+			renderer.render( scene, camera );
+
+			//mini view camera
+//			miniRenderer.clear();
+//			miniRenderer.render( scene, miniViewCamera );
+/*
+			renderer.setViewport( 0, 0, c.width, c.height );
+			renderer.clear();
+
+			// left side
+			renderer.setViewport( 1, 1,   0.5 * c.width - 2, c.height - 2 );
+			renderer.render( scene, camera );
+
+
+			// right side
+			renderer.setViewport( 0.5 * c.width + 1, 1,   0.5 * c.width - 2, c.height - 2 );
+			renderer.render( scene, miniViewCamera );
+*/
+		};
+
+/*
+*	Use this for calculating orbits: http://www.braeunig.us/space/orbmech.htm
+*	Equation of elipse: http://en.wikipedia.org/wiki/Ellipse#Ellipses_in_computer_graphics
+*/
+		function updateOrbits() {
+
+			var a = 3000;//asteroid orbit semi-major axis
+			var b = 2000;//asteroid orbit semi-minor axis
+			var q = 45 * .017;//angle between the X-axis and the major axis of the ellipse in radians
+
+			var delta = clock.getDelta();
+			//var angle = delta * 0.1;
+			angle = angle + 1;
+			if(angle > 360) angle = 0;
+			rotation = angle * .017;
+
+			var moonangle = rotation * 2.0;
+			var asteroidangle = rotation;
+
+			//earth rotation around the sun
+			earth.position.x = 2000 * Math.sin( rotation );
+			earth.position.z = 2000 * Math.cos( rotation );
+			//earth.position.y = 2000 * Math.sin( angle );
+
+			//moon rotation around the earth
+			moon.position.x = 500 * Math.sin( moonangle ) + earth.position.x ;
+			moon.position.z = 500 * Math.cos( moonangle ) + earth.position.z ;
+			//earth.position.y = 2000 * Math.sin( angle );
+
+			//asteroid rotation around the sun
+			//asteroid.position.x = 500 * Math.sin( moonangle ) + earth.position.x ;
+			//asteroid.position.z = 500 * Math.cos( moonangle ) + earth.position.z ;
+			//asteroid.position.y = 2000 * Math.sin( angle );
+
+
+    		asteroid.position.x = a*Math.cos(asteroidangle)*Math.cos(q) - b*Math.sin(asteroidangle)*Math.sin(q);
+    		asteroid.position.z = a*Math.cos(asteroidangle)*Math.sin(q) + b*Math.sin(asteroidangle)*Math.cos(q);
+
+    		//probe1 orbit around the sun
+    		probe1.position.x = orbitscale * (probe1a*Math.cos(rotation)*Math.cos(0) - probe1b*Math.sin(rotation)*Math.sin(0));
+    		probe1.position.z = orbitscale * (probe1a*Math.cos(rotation)*Math.sin(0) + probe1b*Math.sin(rotation)*Math.cos(0));
+
+/*
+			camera.position.x = asteroid.position.x;
+			camera.position.z = asteroid.position.z;
+			camera.position.y = 4000;
+			camera.lookAt( asteroid.position );
+*/
+
+/*			earth.position = new THREE.Vector3(
+				Math.cos( angle ) * earth.position.x - Math.sin( angle) * earth.position.z,
+				0,
+				Math.sin( angle ) * earth.position.x + Math.cos( angle) * earth.position.z
+			);
+			//earth.rotation.y -= angle;
+
+			//moon rotation around the earth
+			moon.position = new THREE.Vector3(
+				Math.cos( moonangle ) * (moon.position.x) - Math.sin( moonangle) * (moon.position.z),
+				0,
+				Math.sin( moonangle ) * (moon.position.x)  + Math.cos( moonangle) * (moon.position.z)
+			);
+*/
+
+		};
+
+		/*
+		* Handle Launch Probe button click.
+		*/
+		function launchprobe(){
+
+
+		};
+
+</script>
+
+		<div id="header">
+            <div id="logo" style="background: url(data/img/mission_asteroid_cover.png); width: 210px; height: 52px;"></div>
+            <div class="flags">
+                <div class="flag en"><a href="http://www.mecabricks.com/en/workshop/"><span></span></a></div>
+                <div class="flag fr"><a href="http://www.mecabricks.com/fr/workshop/"><span></span></a></div>
+                <div class="flag ru"><a href="http://www.mecabricks.com/ru/workshop/"><span></span></a></div>
+            </div>
+
+            <div id="btnDiscover" class="button" onclick="launchprobe()">
+                <div class="left"></div>
+                <div class="middle">Lauch Probe</div>
+                <div class="right"></div>
+            </div>
+        </div>
+
+		<div id="menuBar">
+            <div id="menu-1" class="item" style="margin-left:10px">
+                <div class="itemWrapper" onclick="clickMenuLabel(event, 1)" onmouseover="mouseoverMenuLabel(event, 1)">File</div>
+                <div class="menuTooltip">
+                    <div class="top"></div>
+                    <div class="content">
+                        <div class="tooltipItem" onclick="openAlertForNewModel()">New</div>
+                        <div class="tooltipItem" onclick="openAlertForOpenModel()">Open</div>
+                        <div class="tooltipItem" onclick="openOpenModelWindow( true )">Import</div>
+                        <div class="tooltipItem" onclick="save( false )">Save</div>
+                        <div class="tooltipItem" onclick="save( true )">Save As</div>
+                        <div class="tooltipItem" onclick="openProperties()">Properties</div>
+                    </div>
+                    <div class="bottom"></div>
+                </div>
+            </div>
+            <div id="menu-2" class="item">
+                <div class="itemWrapper" onclick="clickMenuLabel(event, 2)" onmouseover="mouseoverMenuLabel(event, 2)">Help</div>
+                <div class="menuTooltip">
+                    <div class="top"></div>
+                    <div class="content">
+                        <div class="tooltipItem" onclick="openHelpWindow()">Workshop Help</div>
+                        <div class="tooltipItem" onclick="openContactWindow()">Contact Us</div>
+                    </div>
+                    <div class="bottom"></div>
+                </div>
+            </div>
+            <div id="menu-3" class="item">
+                <div class="itemWrapper" onclick="clickMenuLabel(event, 3)" onmouseover="mouseoverMenuLabel(event, 3)">
+                    <div class="normalView"></div>
+                </div>
+                <div class="menuTooltip">
+                    <div class="top"></div>
+                    <div class="content">
+                        <div class="tooltipItem" onclick="setOrientation('left')">Left</div>
+                        <div class="tooltipItem" onclick="setOrientation('right')">Right</div>
+                        <div class="tooltipItem" onclick="setOrientation('back')">Back</div>
+                        <div class="tooltipItem" onclick="setOrientation('front')">Front</div>
+                        <div class="tooltipItem" onclick="setOrientation('bottom')">Bottom</div>
+                        <div class="tooltipItem" onclick="setOrientation('top')">Top</div>
+                    </div>
+                    <div class="bottom"></div>
+                </div>
+            </div>
+            <div id="menu-4" class="item">
+                <div class="itemWrapper" onclick="clickMenuLabel(event, 4)" onmouseover="mouseoverMenuLabel(event, 4)">
+                    <div class="render"></div>
+                </div>
+                <div class="menuTooltip">
+                    <div class="top"></div>
+                    <div class="content">
+                        <div class="tooltipItem" onclick="setRender('texture')">
+                            <div id="menuTextureTick" class="tick"></div>
+                            Texture                        </div>
+                        <div class="tooltipItem" onclick="setRender('wireframe')">
+                            <div id="menuWireframeTick" class="tick" style="display:none"></div>
+                            Wireframe                        </div>
+                    </div>
+                    <div class="bottom"></div>
+                </div>
+            </div>
+            <div id="menu-5" class="item">
+                <div class="itemWrapper" onclick="clickMenuLabel(event, 5)" onmouseover="mouseoverMenuLabel(event, 5)">
+                    <div class="display"></div>
+                </div>
+                <div class="menuTooltip">
+                    <div class="top"></div>
+                    <div class="content">
+                        <div class="tooltipItem" onclick="worldAxisVisibility()">
+                            <div id="menuAxisTick" class="tick"></div>
+                            Axis                        </div>
+                        <div class="tooltipItem" onclick="gridFloorVisibility()">
+                            <div id="menuGridFloorTick" class="tick"></div>
+                            Grid Floor                        </div>
+                    </div>
+                    <div class="bottom"></div>
+                </div>
+            </div>
+            <br style="clear:both">
+        </div>
+
+       <div id="main">
+            <div id="library">
+                <div class="title">
+                    Mission Options    <div class="close" onclick="closeLibrary()"></div>
+                </div>
+                <div class="categoryContainer">
+                    <div id="partCategory"></div>
+                    <select id="partCategories" onchange="getParts()">
+
+<option value="1">Animals</option><option value="2">Bars</option><option value="3" selected>Bricks</option><option value="4">Bricks - Arches</option><option value="5">Bricks - Brackets</option><option value="6">Bricks - Sloping</option><option value="7">Bricks - Special</option><option value="8">Chains & Strings</option><option value="32">Doors & Windows</option><option value="10">Flags</option><option value="24">Food</option><option value="12">Interior</option><option value="11">Ladders & Fences</option><option value="13">Minerals</option><option value="14">Minifigures</option><option value="15">Minifigures - Accessories</option><option value="18">Minifigures - Hairs</option><option value="17">Minifigures - Head Clothing</option><option value="21">Minifigures - Heads</option><option value="19">Minifigures - Legs</option><option value="20">Minifigures - Tools</option><option value="22">Minifigures - Torsos</option><option value="16">Minifigures - Weapons</option><option value="9">Miscellaneous</option><option value="26">Plants</option><option value="27">Plates</option><option value="28">Plates - Baseplates</option><option value="29">Plates - Brackets</option><option value="30">Plates - Flat Tiles</option><option value="31">Plates - Special</option><option value="34">Road Signs</option><option value="41">Support</option><option value="35">Technic</option><option value="36">Transportation</option><option value="38">Transportation - Boats</option><option value="39">Transportation - Cars</option><option value="37">Transportation - Planes</option><option value="40">Transportation - Trains</option><option value="23">Wall Elements</option><option value="33">Wheels</option><option value="25">Windscreens</option>
+                    </select>
+                </div>
+                <div id="partWrapper">
+                    <div id="parts">
+                        <div id="parts_content" class="" style="height: 478px; ">
+                        <div id="part-3005" class="part" style="background: url(data/icons/satellite-icon-1.png)"></div>
+                        <div id="part-3004" class="part" style="background: url(data/icons/satellite-icon-2.png)"></div>
+                        <div id="part-30136" class="part" style="background:url(data/icons/satellite-icon-3.png)"></div>
+                        <div id="part-2877" class="part" style="background: url(data/icons/satellite-icon-4.png)"></div>
+                        <div id="part-3008" class="part" style="background: url(data/icons/satellite-icon-5.png)"></div>
+                        <div id="part-3622" class="part" style="background: url(data/icons/asteroid-icon-1.png)"></div>
+                        <div id="part-3010" class="part" style="background: url(data/icons/asteroid-icon-2.png)"></div>
+                        <div id="part-30137" class="part" style="background:url(data/icons/asteroid-icon-3.png)"></div>
+                        <div id="part-3009" class="part" style="background: url(data/icons/asteroid-icon-4.png)"></div>
+
+                    </div>
+                        <div id="parts_track">
+                            <div id="parts_handle">
+                                <div class="scrollbarHandleTop"></div>
+                                <div class="scrollbarHandleMiddle"></div>
+                                <div class="scrollbarHandleBottom"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bottomSpacer"></div>
+            </div>
+           	<div id="sceneContainer">
+			 <div id="scene">
+				<canvas id="3dworld" width="465" height="500" style="border:1px solid #c3c3c3;">
+					Your browser does not support the HTML5 canvas tag.
+				</canvas>
+			 </div>
+			 <div class="top"></div>
+            </div>
+            <div id="tools">
+                <div class="title">
+                    Orbital Status Window                    <div class="close" onclick="closeTools()"></div>
+                </div>
+                <div id="hierarchy">
+                    <div id="hierarchy_container">
+                        <div id="hierarchy_exit">
+                            <div id="hierarchy_content" style="background: url(data/img/asteroid_capture_sm.png)"></div>
+                            <!--canvas id="mini3dworld" width="230" height="160" style="border:1px solid #c3c3c3;">
+									Your browser does not support the HTML5 canvas tag.
+							</canvas-->
+                        </div>
+                        <div id="hierarchy_track">
+                            <div id="hierarchy_handle">
+                                <div class="scrollbarHandleTop"></div>
+                                <div class="scrollbarHandleMiddle"></div>
+                                <div class="scrollbarHandleBottom"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom">
+                        <div class="button buttonDel" onclick="displayDeleteTooltip()"></div>
+                        <div class="button buttonDup" onclick="duplicateObject()"></div>
+                        <div class="button buttonAdd" onclick="addAssembly()"></div>
+                    </div>
+                </div>
+                <div class="darkSep"></div>
+                <div class="title">
+                    Mission Control                </div>
+                <div id="inspector">
+                    <div>
+                        <div class="label">Colour :</div>
+                        <div class="colourWrapper" onclick="colourPicker.open()">
+                            <div id="colour"></div>
+                            <div class="colourFrame"></div>
+                        </div>
+                        <br style="clear:both" />
+                    </div>
+                    <div style="margin-top:10px">
+                        <div class="label">Grid :</div>
+                        <div class="gridWrapper">
+                            <div id="gridType">
+                                <div class="icon"></div>
+                                <div class="text"></div>
+                            </div>
+                            <select id="gridTypes" onchange="changeGridSize()">
+                                <option value="small" selected>Small</option>
+                                <option value="medium">Medium</option>
+                                <option value="large">Large</option>
+                            </select>
+                        </div>
+                        <br style="clear:both" />
+                    </div>
+                    <div style="margin-top:10px">
+                        <div class="label">x :</div>
+                        <div id="track-position-x" class="sliderTrack">
+                            <div id="handle-position-x" class="sliderHandle"></div>
+                        </div>
+                        <input type="text" id="value-position-x" class="value" onfocus="selectTransformationField( this, 'position', 'x' )" onBlur="saveTransformationValue( this, 'position', 'x' )" />
+                        <br style="clear:both" />
+                    </div>
+                    <div style="margin-top:10px">
+                        <div class="label">y :</div>
+                        <div id="track-position-y" class="sliderTrack">
+                            <div id="handle-position-y" class="sliderHandle"></div>
+                        </div>
+                        <input type="text" id="value-position-y" class="value" onfocus="selectTransformationField( this, 'position', 'y' )" onBlur="saveTransformationValue( this, 'position', 'y' )" />
+                        <br style="clear:both" />
+                    </div>
+                    <div style="margin-top:10px">
+                        <div class="label">z :</div>
+                        <div id="track-position-z" class="sliderTrack">
+                            <div id="handle-position-z" class="sliderHandle"></div>
+                        </div>
+                        <input type="text" id="value-position-z" class="value"  onfocus="selectTransformationField( this, 'position', 'z' )"onBlur="saveTransformationValue( this, 'position', 'z' )" />
+                        <br style="clear:both" />
+                    </div>
+                    <div style="margin-top:10px">
+                        <div class="label">Simulation<br/>Speed :</div>
+                        <div id="track-rotation-x" class="sliderTrack">
+                            <div id="handle-rotation-x" class="sliderHandle"></div>
+                        </div>
+                        <input type="text" id="value-rotation-x" class="value" onfocus="selectTransformationField( this, 'rotation', 'x' )" onBlur="saveTransformationValue( this, 'rotation', 'x' )" />
+                        <br style="clear:both" />
+                    </div>
+                </div>
+            </div>
+            <br style="clear:both" />
+        </div>
+</body>
+
+</html>
