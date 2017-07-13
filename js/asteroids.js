@@ -1,5 +1,5 @@
 
-var renderer,camera,scene,miniRenderer, miniViewCamera,sphere,ambientLight,directionalLight, sunlight, c;
+var renderer,camera,scene,miniRenderer, miniViewCamera,sphere,ambientLight,directionalLight, sunlight;
 var angle = 0,probe1a,probe1b, orbitscale;
 
 clock = new THREE.Clock();
@@ -17,20 +17,19 @@ function init() {
   renderer.setSize(c.width, c.height);
 
   //Mini view renderer
-  //var minic = document.getElementById("mini3dworld");
-  //miniRenderer = new THREE.WebGLRenderer({canvas:minic});
-  //miniRenderer.setSize(minic.width, minic.height);
+  minic = document.getElementById("mini3dworld");
+  miniRenderer = new THREE.WebGLRenderer({canvas:minic});
+  miniRenderer.setSize(minic.width, minic.height);
 
   // scene
   scene = new THREE.Scene();
 
-
   // camera
-  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 50, 1e7);
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1e7);
   camera.position.z = 0;
   camera.position.x = 0;
   camera.position.y = 10000;
-  camera.lookAt( scene.position );
+  
 
   // mini view camera
   miniViewCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 50, 1e7);
@@ -63,7 +62,7 @@ gMiniRenderer.setSize(gScreen.width * .15, gScreen.height * .15);
 
   // sphere - moon
   moon = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
-    color: 0x000000
+    color: 0xff4933
   }));
   //moon.position.z = 0;
   //moon.position.x = earth.position.x + 500;
@@ -75,7 +74,7 @@ gMiniRenderer.setSize(gScreen.width * .15, gScreen.height * .15);
 
   // sphere - sun
   sun = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
-    color: 0xd8ff00, transparent: true
+    color: 0xf3ff33, transparent: true
   }));
   sun.position.z = 0;
   sun.position.x = 0;
@@ -86,7 +85,7 @@ gMiniRenderer.setSize(gScreen.width * .15, gScreen.height * .15);
 
   // sphere - asteroid
   asteroid = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
-    color: 0x000000
+    color: 0xff4933
   }));
   asteroid.position.z = 0;
   asteroid.position.x = 3000;
@@ -98,7 +97,7 @@ gMiniRenderer.setSize(gScreen.width * .15, gScreen.height * .15);
 
   // sphere - space probe1
   probe1 = new THREE.Mesh(new THREE.SphereGeometry(200, 50, 50), new THREE.MeshLambertMaterial({
-    color: 0x000000
+    color: 0xff4933
   }));
 
   //probe1 orbit calculation (GM = 1)
@@ -159,13 +158,16 @@ function animate() {
 };
 
 function render() {
+
+camera.lookAt( scene.position );
   //main camera
-  renderer.clear();
+  //renderer.clear();
   renderer.render( scene, camera );
 
   //mini view camera
-  //			miniRenderer.clear();
-  //			miniRenderer.render( scene, miniViewCamera );
+  //miniRenderer.clear();
+  miniRenderer.render( scene, miniViewCamera );
+  //miniRenderer.render( scene, camera );
 /*
 renderer.setViewport( 0, 0, c.width, c.height );
 renderer.clear();
@@ -215,7 +217,6 @@ function updateOrbits() {
   //asteroid.position.z = 500 * Math.cos( moonangle ) + earth.position.z ;
   //asteroid.position.y = 2000 * Math.sin( angle );
 
-
   asteroid.position.x = a*Math.cos(asteroidangle)*Math.cos(q) - b*Math.sin(asteroidangle)*Math.sin(q);
   asteroid.position.z = a*Math.cos(asteroidangle)*Math.sin(q) + b*Math.sin(asteroidangle)*Math.cos(q);
 
@@ -253,5 +254,5 @@ camera.lookAt( asteroid.position );
 function launchprobe(){
 
 
-};
+}
 
